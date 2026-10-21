@@ -322,3 +322,31 @@ func TestInvalidSavedDataIsPreserved(t *testing.T) {
 		t.Fatal("invalid saved data was overwritten")
 	}
 }
+
+func TestGamingSessionsAreRecordedAndPersisted(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("APPDATA", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	a := newApp()
+	a.startup(context.Background())
+	path := a.path
+	for _, step := range [][2]string{{"mode", "stopwatch"}, {"stopwatch-work", "deep"}, {"stopwatch-work", "gaming"}, {"toggle", ""}} {
+		if err := a.Command(step[0], step[1], 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if a.engine.StopwatchDeepWork || !a.engine.StopwatchGaming || a.engine.TimerGaming {
+		t.Fatal("gaming did not replace deep work for the stopwatch only")
+	}
+	a.engine.History[0].Start = a.engine.History[0].Start.Add(-10 * time.Minute)
+	a.shutdown(context.Background())
+	b := newApp()
+	b.startup(context.Background())
+	defer b.shutdown(context.Background())
+	if b.path != path || !b.engine.StopwatchGaming || len(b.engine.History) != 1 {
+		t.Fatal("gaming selection or history was not restored from the same file")
+	}
+	if entry := b.engine.History[0]; !entry.Gaming || entry.Focus || entry.End.Sub(entry.Start) < 10*time.Minute {
+		t.Fatalf("gaming session recorded as %+v", entry)
+	}
+}

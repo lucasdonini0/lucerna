@@ -40,6 +40,8 @@ type Engine struct {
 	Mode              string            `json:"mode"`
 	TimerDeepWork     bool              `json:"timerDeepWork"`
 	StopwatchDeepWork bool              `json:"stopwatchDeepWork"`
+	TimerGaming       bool              `json:"timerGaming"`
+	StopwatchGaming   bool              `json:"stopwatchGaming"`
 	Phase             string            `json:"phase"`
 	Round             int               `json:"round"`
 	Clocks            map[string]*Clock `json:"clocks"`
@@ -190,22 +192,21 @@ func (e *Engine) command(action, value string, seconds int, now time.Time) error
 		e.Clocks["timer"] = &Clock{Duration: end.Sub(now).Seconds(), Running: true, Started: true, anchor: now}
 		e.Starts++
 	case "timer-work", "stopwatch-work":
-		mode, selected := "timer", &e.TimerDeepWork
+		mode, deep, gaming := "timer", &e.TimerDeepWork, &e.TimerGaming
 		if action == "stopwatch-work" {
-			mode, selected = "stopwatch", &e.StopwatchDeepWork
+			mode, deep, gaming = "stopwatch", &e.StopwatchDeepWork, &e.StopwatchGaming
 		}
-		if e.Mode != mode || (value != "normal" && value != "deep") {
+		if e.Mode != mode || (value != "normal" && value != "deep" && value != "gaming") {
 			return errors.New("Tipo de sessão inválido")
 		}
-		deep := value == "deep"
-		if deep == *selected {
+		if (value == "deep") == *deep && (value == "gaming") == *gaming {
 			return nil
 		}
 		if c.Running {
 			e.finish(now, false)
 			c.Elapsed, c.anchor = c.elapsed(now), now
 		}
-		*selected = deep
+		*deep, *gaming = value == "deep", value == "gaming"
 	case "duration":
 		if e.Mode == "stopwatch" || value != e.Mode+":"+e.Phase {
 			return errors.New("A etapa mudou. Abra o seletor novamente")

@@ -72,6 +72,8 @@ func (a *App) startup(ctx context.Context) {
 		Alarms            []Alarm
 		TimerDeepWork     bool
 		StopwatchDeepWork bool
+		TimerGaming       bool
+		StopwatchGaming   bool
 	}
 	if json.Unmarshal(data, &saved) != nil || !saved.Settings.valid() {
 		a.warning = "Os dados salvos estão inválidos e foram preservados."
@@ -90,6 +92,8 @@ func (a *App) startup(ctx context.Context) {
 	a.engine.Settings, a.engine.Selected = saved.Settings, saved.Selected
 	a.engine.TimerDeepWork = saved.TimerDeepWork
 	a.engine.StopwatchDeepWork = saved.StopwatchDeepWork
+	a.engine.TimerGaming = saved.TimerGaming && !saved.TimerDeepWork
+	a.engine.StopwatchGaming = saved.StopwatchGaming && !saved.StopwatchDeepWork
 	if saved.History != nil {
 		a.engine.History = saved.History
 	}
@@ -117,7 +121,9 @@ func (a *App) save() {
 		Alarms            []Alarm    `json:"alarms"`
 		TimerDeepWork     bool       `json:"timerDeepWork"`
 		StopwatchDeepWork bool       `json:"stopwatchDeepWork"`
-	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms, a.engine.TimerDeepWork, a.engine.StopwatchDeepWork}, "", "  ")
+		TimerGaming       bool       `json:"timerGaming"`
+		StopwatchGaming   bool       `json:"stopwatchGaming"`
+	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms, a.engine.TimerDeepWork, a.engine.StopwatchDeepWork, a.engine.TimerGaming, a.engine.StopwatchGaming}, "", "  ")
 	if err == nil {
 		var previous []byte
 		previous, err = os.ReadFile(a.path)

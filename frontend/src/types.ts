@@ -32,6 +32,8 @@ export type State = {
   mode: Mode;
   timerDeepWork: boolean;
   stopwatchDeepWork: boolean;
+  timerGaming: boolean;
+  stopwatchGaming: boolean;
   phase: string;
   round: number;
   seconds: number;
@@ -68,6 +70,7 @@ export type Activity = {
   end: string;
   mode: Mode;
   focus: boolean;
+  gaming?: boolean;
   completed: boolean;
 };
 declare global {

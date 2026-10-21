@@ -1,7 +1,17 @@
 import type { Alarm, API, Settings, State } from "./types";
 import { icon, layout } from "./view";
 import { setupHistory } from "./history";
-import { clickSound, completedSound, startAlarmSound, stopAlarmSound, unlockAudio } from "./audio";
+import {
+  bubbleBurstSound,
+  bubbleClickSound,
+  bubbleCompletedSound,
+  clickSound,
+  completedSound,
+  setBubbleAmbience,
+  startAlarmSound,
+  stopAlarmSound,
+  unlockAudio,
+} from "./audio";
 import "./style.css";
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
@@ -29,6 +39,8 @@ let activeAlarmKey = "";
 let alarmExpanding = false;
 let previewTimeout = 0;
 let refreshHistory: () => Promise<void>;
+let lastTheme = "";
+let ambienceKey = "";
 
 const messages = {
   focus: [
@@ -44,15 +56,32 @@ const messages = {
     "Solte os ombros. Você merece esse respiro.",
     "Descanse agora, continue com calma.",
   ],
+  gaming: [
+    "Boa partida.",
+    "Respira entre uma partida e outra.",
+    "Lembra de beber água.",
+    "Joga com calma, sem tilt.",
+  ],
 };
+
+function sessionWork() {
+  if (state.mode === "pomodoro") return "normal";
+  const [deep, gaming] =
+    state.mode === "timer"
+      ? [state.timerDeepWork, state.timerGaming]
+      : [state.stopwatchDeepWork, state.stopwatchGaming];
+  return gaming ? "gaming" : deep ? "deep" : "normal";
+}
 
 function updateMessage() {
   if (state.starts === lastStart) return;
   lastStart = state.starts;
   const pool =
-    state.mode === "pomodoro" && state.phase !== "focus"
-      ? messages.rest
-      : messages.focus;
+    sessionWork() === "gaming"
+      ? messages.gaming
+      : state.mode === "pomodoro" && state.phase !== "focus"
+        ? messages.rest
+        : messages.focus;
   const message = pool[messageIndex++ % pool.length];
   const subtitle = $("#subtitle");
   window.clearTimeout(messageTimeout);
@@ -99,17 +128,36 @@ function updateTimerUntilPreview() {
 }
 
 function chime() {
-  if (state.settings.sound) completedSound(state.settings.volume);
+  if (!state.settings.sound) return;
+  if (sessionWork() === "gaming") bubbleCompletedSound(state.settings.volume);
+  else completedSound(state.settings.volume);
 }
 
 function render() {
   const c = state.clocks[state.mode];
+  const work = sessionWork();
+  const gaming =
+    work === "gaming" &&
+    c.started &&
+    (state.mode === "stopwatch" || state.seconds > 0);
   const dark =
-    !historyOpen && !alarmsOpen &&
+    !gaming &&
     state.mode !== "stopwatch" &&
     c.started &&
     (state.mode === "timer" ? state.seconds > 0 : state.phase === "focus");
+  const theme = gaming ? "gaming" : dark ? "dark" : "light";
+  if (theme !== lastTheme) {
+    if (gaming && lastTheme && state.settings.sound) bubbleBurstSound(state.settings.volume);
+    lastTheme = theme;
+  }
   document.body.classList.toggle("dark", dark);
+  document.body.classList.toggle("gaming", gaming);
+  const ambience =
+    gaming && c.running && state.settings.sound ? String(state.settings.volume) : "";
+  if (ambience !== ambienceKey) {
+    ambienceKey = ambience;
+    setBubbleAmbience(ambience ? state.settings.volume : 0);
+  }
   document.body.classList.toggle("compact", state.compact);
   $("#history").hidden = !historyOpen;
   $("#alarms").hidden = !alarmsOpen;
@@ -127,8 +175,8 @@ function render() {
           state.phase
         ] || "Foco"
       : state.mode === "timer"
-        ? state.timerDeepWork ? "Deep Work" : "Timer"
-        : state.stopwatchDeepWork ? "Deep Work" : "Stopwatch";
+        ? { deep: "Deep Work", gaming: "Gaming", normal: "Timer" }[work]
+        : { deep: "Deep Work", gaming: "Gaming", normal: "Stopwatch" }[work];
   $("#phase").textContent =
     state.mode === "pomodoro"
       ? `${state.round}/${state.settings.rounds}`
@@ -186,10 +234,10 @@ function render() {
   $("#tasks-section").hidden = historyOpen || alarmsOpen || state.mode !== "pomodoro";
   $("#timer-options").hidden = historyOpen || alarmsOpen || state.mode !== "timer";
   $("#session-options").hidden = historyOpen || alarmsOpen || state.mode === "pomodoro";
-  const deepWork = state.mode === "stopwatch" ? state.stopwatchDeepWork : state.timerDeepWork;
-  const workSwitch = $('[data-action="session-work-toggle"]');
-  workSwitch.classList.toggle("deep", deepWork);
-  workSwitch.setAttribute("aria-checked", String(deepWork));
+  document.querySelectorAll<HTMLElement>("[data-work]").forEach((el) => {
+    el.classList.toggle("active", el.dataset.work === work);
+    el.setAttribute("aria-checked", String(el.dataset.work === work));
+  });
   $("#stopwatch-note").hidden = historyOpen || alarmsOpen || state.mode !== "stopwatch";
   document
     .querySelectorAll<HTMLElement>("[data-seconds]")
@@ -288,7 +336,8 @@ document.addEventListener("click", async (event) => {
   );
   if (!target || target.disabled || !state) return;
   unlockAudio();
-  clickSound(state.settings.volume);
+  if (document.body.classList.contains("gaming")) bubbleClickSound(state.settings.volume);
+  else clickSound(state.settings.volume);
   if (target.dataset.mode) {
     historyOpen = false;
     alarmsOpen = false;
@@ -316,9 +365,9 @@ document.addEventListener("click", async (event) => {
     render();
     return;
   }
-  if (action === "session-work-toggle") {
-    const deepWork = state.mode === "stopwatch" ? state.stopwatchDeepWork : state.timerDeepWork;
-    await command(`${state.mode}-work`, deepWork ? "normal" : "deep");
+  if (action === "session-work") {
+    if (target.dataset.work !== sessionWork())
+      await command(`${state.mode}-work`, target.dataset.work);
     return;
   }
   if (action === "compact") { historyOpen = false; alarmsOpen = false; }

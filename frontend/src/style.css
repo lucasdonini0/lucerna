@@ -425,43 +425,29 @@ input::placeholder {
   gap: 10px;
   margin: 0 0 22px;
 }
-.session-work-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 0 5px 8px;
+.session-work {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.session-work button {
+  padding: 6px 10px;
   border-radius: 4px;
   font-size: 11px;
   color: var(--muted);
 }
-.session-work-switch.deep > span:last-child,
-.session-work-switch:not(.deep) > span:first-child {
-  color: var(--ink);
+.session-work button.active {
+  background: var(--accent);
+  color: #fff;
   font-weight: 600;
 }
-.session-work-track {
-  width: 36px;
-  height: 20px;
-  flex: none;
-  border-radius: 999px;
-  background: #b8b2c0;
-  padding: 2px;
-  transition: background 0.18s ease;
+.session-work button[data-work="gaming"].active {
+  background: linear-gradient(135deg, #2b9fe0, #1fc4a4);
 }
-.session-work-thumb {
-  display: block;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px #0003;
-  transition: transform 0.18s ease;
-}
-.session-work-switch.deep .session-work-track {
-  background: var(--accent);
-}
-.session-work-switch.deep .session-work-thumb {
-  transform: translateX(16px);
+.dark .session-work button.active {
+  color: #241633;
 }
 .presets button {
   border: 1px solid var(--line);
@@ -747,6 +733,146 @@ h2 {
     transform: translate3d(var(--drift), -100px, 0);
     opacity: 0.25;
   }
+}
+.water {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(165deg, #dff3ff 0%, #c4e8fa 42%, #bdf2e3 100%);
+  opacity: 0;
+  transition: opacity 0.9s ease-in-out;
+}
+.water .blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(46px);
+  opacity: 0.8;
+  animation: wave 16s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.water .blob:nth-child(1) {
+  width: 280px;
+  height: 230px;
+  left: -70px;
+  top: -50px;
+  background: #86cdfb;
+}
+.water .blob:nth-child(2) {
+  width: 260px;
+  height: 260px;
+  right: -90px;
+  top: 32%;
+  background: #6ee3c8;
+  animation-duration: 21s;
+  animation-delay: -6s;
+}
+.water .blob:nth-child(3) {
+  width: 230px;
+  height: 200px;
+  left: 8%;
+  bottom: -60px;
+  background: #8fe9d8;
+  animation-duration: 18s;
+  animation-delay: -11s;
+}
+.water .blob:nth-child(4) {
+  width: 170px;
+  height: 150px;
+  left: 45%;
+  top: 8%;
+  background: #a9dcff;
+  animation-duration: 24s;
+  animation-delay: -3s;
+}
+.water i {
+  position: absolute;
+  left: var(--x);
+  bottom: -24px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  border: 1px solid #ffffffc0;
+  background: radial-gradient(circle at 32% 30%, #ffffffe0 0 18%, #ffffff30 42%, #ffffff10 70%);
+  opacity: 0;
+  animation: rise var(--duration) var(--delay) ease-in infinite;
+  animation-play-state: paused;
+}
+.water i:nth-child(4n) {
+  filter: blur(1.5px);
+}
+body.gaming .water {
+  opacity: 1;
+}
+body.gaming .water .blob,
+body.gaming .water i {
+  animation-play-state: running;
+}
+@keyframes wave {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(40px, 30px, 0) scale(1.15);
+  }
+  to {
+    transform: translate3d(-30px, 50px, 0) scale(0.92);
+  }
+}
+@keyframes rise {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate3d(var(--drift), -55vh, 0);
+  }
+  85% {
+    opacity: 0.7;
+  }
+  to {
+    transform: translate3d(0, -110vh, 0);
+    opacity: 0;
+  }
+}
+body.gaming {
+  --ink: #0d3a4e;
+  --muted: #33677a;
+  --line: #0d4a6024;
+  --accent: #0f8fb8;
+  --surface: #ffffff5c;
+  color: var(--ink);
+}
+body.gaming .primary {
+  background: linear-gradient(135deg, #2b9fe0, #1fc4a4);
+  color: #fff;
+  box-shadow: 0 6px 22px #1fa6c440;
+}
+body.gaming .primary:hover {
+  background: linear-gradient(135deg, #3daceb, #2fd1b2);
+}
+body.gaming .presets button,
+body.gaming .session-work,
+body.gaming .secondary {
+  background: #ffffff3d;
+  backdrop-filter: blur(10px);
+}
+.dark .alarm-controls select,
+body.gaming .alarm-controls select {
+  background: var(--surface);
+  color: var(--ink);
+}
+.alarm-controls option {
+  color: #292731;
+  background: #f8f7f4;
+}
+body.gaming .brand-mark {
+  background: #1fb5c4;
+  box-shadow: 0 0 0 3px #1fb5c428;
 }
 body,
 .icon,

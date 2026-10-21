@@ -102,3 +102,78 @@ export function startAlarmSound(alarm: Alarm) {
   play();
   if (alarm.repeat) alarmInterval = window.setInterval(play, 2500);
 }
+
+let bubbleTimeout = 0;
+
+function bubble(start: number, volume: number, pitch = 300 + Math.random() * 380) {
+  const audio = ready();
+  const oscillator = audio.createOscillator();
+  const gain = audio.createGain();
+  const length = 0.05 + Math.random() * 0.07;
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(pitch, start);
+  oscillator.frequency.exponentialRampToValueAtTime(pitch * (2.2 + Math.random()), start + length);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + length);
+  oscillator.connect(gain).connect(audio.destination);
+  oscillator.start(start);
+  oscillator.stop(start + length + 0.01);
+}
+
+function splash(start: number, volume: number) {
+  const audio = ready();
+  const buffer = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.5), audio.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const source = audio.createBufferSource();
+  const filter = audio.createBiquadFilter();
+  const gain = audio.createGain();
+  source.buffer = buffer;
+  filter.type = "bandpass";
+  filter.frequency.setValueAtTime(1800, start);
+  filter.frequency.exponentialRampToValueAtTime(500, start + 0.45);
+  filter.Q.value = 0.8;
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.48);
+  source.connect(filter).connect(gain).connect(audio.destination);
+  source.start(start);
+}
+
+export function bubbleClickSound(volume: number) {
+  if (volume <= 0) return;
+  bubble(ready().currentTime, volume * 0.16, 420 + Math.random() * 160);
+}
+
+export function bubbleBurstSound(volume: number) {
+  if (volume <= 0) return;
+  const now = ready().currentTime;
+  splash(now, volume * 0.07);
+  for (let i = 0; i < 9; i++) bubble(now + 0.05 + Math.random() * 0.7, volume * (0.08 + Math.random() * 0.08));
+}
+
+export function bubbleCompletedSound(volume: number) {
+  if (volume <= 0) return;
+  const audio = ready();
+  for (let repeat = 0; repeat < 3; repeat++) {
+    const start = audio.currentTime + repeat * 0.85;
+    splash(start, volume * 0.06);
+    note(587, start, 0.4, volume * 0.12, audio.destination);
+    note(880, start + 0.2, 0.5, volume * 0.13, audio.destination);
+    for (let i = 0; i < 5; i++) bubble(start + 0.05 + Math.random() * 0.55, volume * 0.13);
+  }
+}
+
+export function setBubbleAmbience(volume: number) {
+  window.clearTimeout(bubbleTimeout);
+  bubbleTimeout = 0;
+  if (volume <= 0) return;
+  const play = () => {
+    const now = ready().currentTime;
+    const count = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) bubble(now + i * (0.08 + Math.random() * 0.12), volume * 0.05, 240 + Math.random() * 260);
+    bubbleTimeout = window.setTimeout(play, 3500 + Math.random() * 6500);
+  };
+  bubbleTimeout = window.setTimeout(play, 1500);
+}

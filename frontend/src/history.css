@@ -1,5 +1,17 @@
 #history {
+  --focus: var(--accent);
+  --gaming: #1eb3c4;
+  --other: #c8bfd5;
   padding-top: 24px;
+}
+body.dark #history {
+  --gaming: #5fe3d0;
+  --other: #ffffff30;
+}
+body.gaming #history {
+  --focus: #7a63b0;
+  --gaming: #0f9fb5;
+  --other: #0d4a6030;
 }
 .history-heading,
 .week-navigation {
@@ -9,11 +21,14 @@
 }
 .history-heading button {
   font-size: 11px;
+  font-weight: 600;
   color: var(--accent);
-  padding: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
 }
 .week-navigation {
-  margin: 20px 0 12px;
+  margin: 18px 0 10px;
 }
 .week-navigation span {
   font-size: 11px;
@@ -33,9 +48,9 @@
   gap: 4px;
 }
 #week-days button {
-  padding: 10px 0;
+  padding: 9px 0 10px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 6px;
   display: grid;
   gap: 6px;
   justify-items: center;
@@ -45,79 +60,142 @@
   color: var(--muted);
 }
 #week-days strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 #week-days .active {
   border-color: var(--accent);
-  background: #78619e0a;
+  background: var(--surface);
+}
+#week-days .active strong {
+  font-weight: 700;
 }
 #week-days i {
-  display: block;
-  height: 3px;
-  width: 70%;
+  display: flex;
+  height: 5px;
+  width: 76%;
+  border-radius: 3px;
+  overflow: hidden;
   background: var(--line);
-  position: relative;
 }
-#week-days i:after {
+#week-days b,
+#week-days em {
+  display: block;
+  height: 100%;
+  background: var(--focus);
+}
+#week-days em {
+  background: var(--gaming);
+}
+#week-total {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 12px;
+  font-size: 10px;
+  color: var(--muted);
+}
+#week-total .focus,
+#week-total .gaming {
+  color: var(--ink);
+  font-weight: 600;
+}
+.history-legend span:before,
+#week-total .focus:before,
+#week-total .gaming:before {
   content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 3px;
-  width: var(--fill);
-  background: var(--accent);
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  border-radius: 2px;
+  background: var(--focus);
+  margin-right: 5px;
+}
+#week-total .gaming:before,
+.history-legend .gaming:before {
+  background: var(--gaming);
+}
+.history-legend .other:before {
+  background: var(--other);
+}
+.history-day {
+  margin: 22px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.history-day:first-letter {
+  text-transform: uppercase;
 }
 #history-summary {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 24px 0;
-  border-bottom: 1px solid var(--line);
+  gap: 8px;
 }
-#history-summary div {
+#history-summary .stat {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  padding: 12px 12px 11px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+}
+#history-summary .focus {
+  border-left-color: var(--focus);
+}
+#history-summary .gaming {
+  border-left-color: var(--gaming);
+}
+#history-summary .done {
+  border-left-color: var(--accent);
 }
 #history-summary strong {
-  font-size: 24px;
-  font-weight: 400;
+  font-size: 22px;
+  font-weight: 450;
   letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
 }
-#history-summary span,
-#history-summary small {
+#history-summary span {
   color: var(--muted);
   font-size: 10px;
 }
-#history-summary small {
-  grid-column: 1 / -1;
-}
 .history-label {
-  margin: 22px 0 14px;
+  margin: 24px 0 12px;
 }
 #hour-chart {
-  height: 76px;
+  height: 90px;
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   gap: 3px;
   border-bottom: 1px solid var(--line);
+  background: repeating-linear-gradient(
+    to top,
+    transparent 0 calc(25% - 1px),
+    var(--line) calc(25% - 1px) 25%
+  );
 }
 .hour-column {
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  background: #78619e05;
+  border-radius: 2px 2px 0 0;
+  overflow: hidden;
 }
-.hour-column i,
-.hour-column b {
+.hour-column:hover {
+  background: var(--surface);
+}
+.hour-column i {
   display: block;
-  background: #c8bfd5;
   min-height: 0;
+  background: var(--other);
 }
-.hour-column b {
-  background: var(--accent);
+.hour-column .focus {
+  background: var(--focus);
+}
+.hour-column .gaming {
+  background: var(--gaming);
 }
 .hour-labels {
   display: flex;
@@ -129,43 +207,88 @@
 .history-legend {
   display: flex;
   gap: 15px;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--muted);
-  margin: 15px 0;
-}
-.history-legend span:before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  display: inline-block;
-  background: var(--accent);
-  margin-right: 5px;
-}
-.history-legend span + span:before {
-  background: #c8bfd5;
+  margin: 12px 0 0;
 }
 .history-session {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: 12px;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--other);
+  border-radius: 6px;
+  font-size: 13px;
 }
-.history-session small {
+.history-session.focus {
+  border-left-color: var(--focus);
+}
+.history-session.gaming {
+  border-left-color: var(--gaming);
+}
+.session-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.session-tags {
+  display: flex;
+  gap: 5px;
+}
+.session-tags em {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #fff;
+  background: var(--other);
+}
+.history-session.other .session-tags em {
+  color: var(--ink);
+}
+.history-session.focus .session-tags em {
+  background: var(--focus);
+}
+.history-session.gaming .session-tags em {
+  background: var(--gaming);
+}
+.dark .history-session .session-tags em {
+  color: #1a1226;
+}
+.history-session .session-tags em.done {
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid currentColor;
+}
+.session-time {
+  font-variant-numeric: tabular-nums;
+}
+.session-time small {
   display: block;
   color: var(--muted);
   font-size: 10px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .history-session strong {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .history-empty {
   color: var(--muted);
   font-size: 12px;
   padding: 18px 0;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
 }
 nav {
   gap: 0;
