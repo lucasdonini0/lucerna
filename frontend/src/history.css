@@ -1,7 +1,7 @@
 #history {
   --focus: var(--accent);
   --gaming: #1eb3c4;
-  --other: #c8bfd5;
+  --other: color-mix(in srgb, var(--accent) 30%, #e5e2e8);
   padding-top: 24px;
 }
 body.dark #history {

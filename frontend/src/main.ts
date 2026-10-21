@@ -7,6 +7,7 @@ import {
   bubbleCompletedSound,
   clickSound,
   completedSound,
+  deepWorkSound,
   setBubbleAmbience,
   startAlarmSound,
   stopAlarmSound,
@@ -39,7 +40,7 @@ let activeAlarmKey = "";
 let alarmExpanding = false;
 let previewTimeout = 0;
 let refreshHistory: () => Promise<void>;
-let lastTheme = "";
+let lastRun = "";
 let ambienceKey = "";
 
 const messages = {
@@ -145,11 +146,14 @@ function render() {
     state.mode !== "stopwatch" &&
     c.started &&
     (state.mode === "timer" ? state.seconds > 0 : state.phase === "focus");
-  const theme = gaming ? "gaming" : dark ? "dark" : "light";
-  if (theme !== lastTheme) {
-    if (gaming && lastTheme && state.settings.sound) bubbleBurstSound(state.settings.volume);
-    lastTheme = theme;
+  const run = `${state.mode}:${c.running}`;
+  if (c.running && lastRun === `${state.mode}:false` && state.settings.sound) {
+    if (work === "gaming") bubbleBurstSound(state.settings.volume);
+    else if (work === "deep" || (state.mode === "pomodoro" && state.phase === "focus"))
+      deepWorkSound(state.settings.volume);
   }
+  lastRun = run;
+  document.body.dataset.work = alarmsOpen ? "normal" : work;
   document.body.classList.toggle("dark", dark);
   document.body.classList.toggle("gaming", gaming);
   const ambience =
@@ -366,8 +370,8 @@ document.addEventListener("click", async (event) => {
     return;
   }
   if (action === "session-work") {
-    if (target.dataset.work !== sessionWork())
-      await command(`${state.mode}-work`, target.dataset.work);
+    if (target.dataset.work === sessionWork()) return;
+    await command(`${state.mode}-work`, target.dataset.work);
     return;
   }
   if (action === "compact") { historyOpen = false; alarmsOpen = false; }

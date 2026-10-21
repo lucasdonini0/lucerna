@@ -10,6 +10,63 @@
   --surface: #efedf1;
   --ink: #292731;
 }
+@property --accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #78619e;
+}
+@property --night-a {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #3b2458;
+}
+@property --night-b {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1b112c;
+}
+@property --btn-a {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #78619e;
+}
+@property --btn-b {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #78619e;
+}
+@property --btn-glow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #78619e00;
+}
+body {
+  --tab-btn-a: #78619e;
+  --tab-btn-b: #78619e;
+  --btn-a: var(--tab-btn-a);
+  --btn-b: var(--tab-btn-b);
+  --btn-glow: #78619e00;
+  --tab-accent: #78619e;
+  --tab-accent-dark: #bba1df;
+  --night-a: #3b2458;
+  --night-b: #1b112c;
+  --accent: var(--tab-accent);
+}
+body[data-work="deep"] {
+  --tab-btn-a: #5a5fd0;
+  --tab-btn-b: #5a5fd0;
+  --tab-accent: #5a5fd0;
+  --tab-accent-dark: #aab0ff;
+  --night-a: #23286a;
+  --night-b: #0e1033;
+}
+body[data-work="gaming"] {
+  --tab-btn-a: #2b9fe0;
+  --tab-btn-b: #1fc4a4;
+  --btn-glow: #1fa6c440;
+  --tab-accent: #0f8fb8;
+  --tab-accent-dark: #6fd8e8;
+}
 * {
   box-sizing: border-box;
 }
@@ -37,7 +94,7 @@ button:disabled {
 }
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid #a78dc7;
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, white);
   outline-offset: 3px;
 }
 button:hover {
@@ -102,9 +159,9 @@ header {
 .brand-mark {
   width: 9px;
   height: 9px;
-  background: #8d75ac;
+  background: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px #8d75ac18;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .window-actions {
   display: flex;
@@ -267,7 +324,8 @@ nav .active:after {
   align-items: center;
   justify-content: center;
   gap: 9px;
-  background: #78619e;
+  background: linear-gradient(135deg, var(--btn-a), var(--btn-b));
+  box-shadow: 0 6px 22px var(--btn-glow);
   color: #fff;
   border-radius: 5px;
   min-height: 40px;
@@ -276,7 +334,7 @@ nav .active:after {
   font-weight: 600;
 }
 .primary:hover {
-  background: #8971af;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--btn-a) 85%, white), color-mix(in srgb, var(--btn-b) 85%, white));
 }
 .primary svg {
   width: 15px;
@@ -300,7 +358,7 @@ nav .active:after {
   border-radius: 50%;
 }
 #rounds .current {
-  background: #b49fcd;
+  background: color-mix(in srgb, var(--accent) 55%, white);
 }
 #rounds .complete {
   background: var(--accent);
@@ -447,7 +505,7 @@ input::placeholder {
   background: linear-gradient(135deg, #2b9fe0, #1fc4a4);
 }
 .dark .session-work button.active {
-  color: #241633;
+  color: var(--night-b);
 }
 .presets button {
   border: 1px solid var(--line);
@@ -458,7 +516,7 @@ input::placeholder {
 .presets .active {
   border-color: var(--accent);
   color: var(--accent);
-  background: #8d75ac0d;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .secondary {
@@ -647,8 +705,8 @@ h2 {
   z-index: -2;
   background: radial-gradient(
     ellipse at 25% 0%,
-    #3b2458 0%,
-    #1b112c 45%,
+    var(--night-a) 0%,
+    var(--night-b) 45%,
     #0a090f 100%
   );
   opacity: 0;
@@ -661,7 +719,7 @@ h2 {
   height: 150px;
   left: 10%;
   top: 10%;
-  background: #75509930;
+  background: color-mix(in srgb, var(--accent) 19%, transparent);
   filter: blur(55px);
   border-radius: 50%;
 }
@@ -669,7 +727,9 @@ h2 {
   --ink: #f0eaf8;
   --muted: #a89bb7;
   --line: #ffffff14;
-  --accent: #bba1df;
+  --accent: var(--tab-accent-dark);
+  --btn-a: var(--tab-accent-dark);
+  --btn-b: var(--tab-accent-dark);
   --surface: #ffffff0c;
   color: var(--ink);
 }
@@ -677,11 +737,7 @@ h2 {
   opacity: 1;
 }
 .dark .primary {
-  background: #c3acdf;
-  color: #241633;
-}
-.dark .primary:hover {
-  background: #d1bfe8;
+  color: var(--night-b);
 }
 .particles {
   position: absolute;
@@ -846,14 +902,6 @@ body.gaming {
   --accent: #0f8fb8;
   --surface: #ffffff5c;
   color: var(--ink);
-}
-body.gaming .primary {
-  background: linear-gradient(135deg, #2b9fe0, #1fc4a4);
-  color: #fff;
-  box-shadow: 0 6px 22px #1fa6c440;
-}
-body.gaming .primary:hover {
-  background: linear-gradient(135deg, #3daceb, #2fd1b2);
 }
 body.gaming .presets button,
 body.gaming .session-work,
@@ -1061,4 +1109,89 @@ dialog::backdrop {
 }
 main {
   padding-bottom: 24px;
+}
+body {
+  transition:
+    --accent 0.6s ease,
+    --btn-a 0.6s ease,
+    --btn-b 0.6s ease,
+    --btn-glow 0.6s ease,
+    --night-a 0.9s ease,
+    --night-b 0.9s ease,
+    color 0.8s ease,
+    border-color 0.8s ease,
+    background-color 0.8s ease;
+}
+.session-work button[data-work="deep"] {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.session-work button[data-work="deep"].active {
+  color: #fff;
+  background: radial-gradient(ellipse at 25% 0%, var(--night-a) 0%, var(--night-b) 80%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tab-accent-dark) 35%, transparent),
+    0 4px 16px color-mix(in srgb, var(--night-a) 45%, transparent);
+}
+.session-work button[data-work="deep"].active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 200%;
+  z-index: -1;
+  background-image:
+    radial-gradient(1px 1px at 10% 70%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 32% 25%, #fffc, transparent),
+    radial-gradient(1px 1px at 55% 85%, #fff, transparent),
+    radial-gradient(1px 1px at 72% 40%, #fffb, transparent),
+    radial-gradient(1.5px 1.5px at 88% 12%, #fff, transparent),
+    radial-gradient(1px 1px at 22% 5%, #fff9, transparent);
+  background-size: 100% 50%;
+  animation:
+    deep-stars 7s linear infinite,
+    deep-twinkle 2.4s ease-in-out infinite alternate;
+}
+.session-work button[data-work="deep"].active::after {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 26px;
+  left: 6px;
+  top: -6px;
+  z-index: -1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tab-accent-dark) 45%, transparent);
+  filter: blur(10px);
+}
+.dark .session-work button[data-work="deep"].active {
+  color: #fff;
+}
+@keyframes deep-stars {
+  to {
+    transform: translateY(-50%);
+  }
+}
+@keyframes deep-twinkle {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .session-work button[data-work="deep"].active::before {
+    animation: none;
+  }
+}
+.session-work button.active {
+  animation: segment-in 0.45s ease;
+}
+@keyframes segment-in {
+  from {
+    opacity: 0.35;
+  }
 }

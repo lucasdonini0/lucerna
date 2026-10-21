@@ -177,3 +177,30 @@ export function setBubbleAmbience(volume: number) {
   };
   bubbleTimeout = window.setTimeout(play, 1500);
 }
+
+export function deepWorkSound(volume: number) {
+  if (volume <= 0) return;
+  const audio = ready();
+  const start = audio.currentTime + 0.02;
+  const bus = audio.createGain();
+  const filter = audio.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(400, start);
+  filter.frequency.exponentialRampToValueAtTime(3200, start + 0.7);
+  bus.connect(filter).connect(audio.destination);
+  const buffer = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.9), audio.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const noise = audio.createBufferSource();
+  const whoosh = audio.createGain();
+  noise.buffer = buffer;
+  whoosh.gain.setValueAtTime(0.0001, start);
+  whoosh.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume * 0.05), start + 0.35);
+  whoosh.gain.exponentialRampToValueAtTime(0.0001, start + 0.85);
+  noise.connect(whoosh).connect(bus);
+  noise.start(start);
+  note(110, start, 1.1, volume * 0.16, bus, "triangle", 220);
+  note(440, start + 0.18, 1.3, volume * 0.09, bus);
+  note(659, start + 0.3, 1.4, volume * 0.08, bus);
+  note(988, start + 0.45, 1.5, volume * 0.05, bus);
+}
