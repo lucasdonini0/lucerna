@@ -33,14 +33,15 @@ type App struct {
 
 type Snapshot struct {
 	*Engine
-	Seconds     float64    `json:"seconds"`
-	Progress    float64    `json:"progress"`
-	Compact     bool       `json:"compact"`
-	Pinned      bool       `json:"pinned"`
-	Warning     string     `json:"warning"`
-	Alarms      []Alarm    `json:"alarms"`
-	ActiveAlarm *Alarm     `json:"activeAlarm"`
-	TimerEndsAt *time.Time `json:"timerEndsAt"`
+	Seconds     float64            `json:"seconds"`
+	Progress    float64            `json:"progress"`
+	Compact     bool               `json:"compact"`
+	Pinned      bool               `json:"pinned"`
+	Warning     string             `json:"warning"`
+	Alarms      []Alarm            `json:"alarms"`
+	ActiveAlarm *Alarm             `json:"activeAlarm"`
+	TimerEndsAt *time.Time         `json:"timerEndsAt"`
+	TaskSeconds map[string]float64 `json:"taskSeconds"`
 }
 
 func newApp() *App {
@@ -243,7 +244,13 @@ func (a *App) State() Snapshot {
 		value := *a.activeAlarm
 		active = &value
 	}
-	return Snapshot{&copy, seconds, progress, a.compact, a.pinned, a.warning, slices.Clone(a.alarms), active, a.engine.Clocks["timer"].endsAt(now)}
+	taskSeconds := map[string]float64{}
+	for _, entry := range a.engine.History {
+		if entry.Task != "" {
+			taskSeconds[entry.Task] += entry.End.Sub(entry.Start).Seconds()
+		}
+	}
+	return Snapshot{&copy, seconds, progress, a.compact, a.pinned, a.warning, slices.Clone(a.alarms), active, a.engine.Clocks["timer"].endsAt(now), taskSeconds}
 }
 
 func (a *App) Command(action, value string, seconds int) error {
@@ -287,20 +294,18 @@ func (a *App) SaveTasks(tasks []Task) error {
 	seen := map[string]bool{}
 	for i := range tasks {
 		tasks[i].Title = strings.TrimSpace(tasks[i].Title)
-		if tasks[i].ID == "" || seen[tasks[i].ID] || len(tasks[i].Title) == 0 || len(tasks[i].Title) > 500 || tasks[i].Estimate < 0 || tasks[i].Estimate > 99 {
+		if tasks[i].ID == "" || seen[tasks[i].ID] || len(tasks[i].Title) == 0 || len(tasks[i].Title) > 500 {
 			return errors.New("Tarefa inválida")
 		}
 		seen[tasks[i].ID] = true
-		tasks[i].Completed = 0
-		for _, old := range a.engine.Tasks {
-			if old.ID == tasks[i].ID {
-				tasks[i].Completed = old.Completed
-			}
-		}
 	}
 	a.engine.Tasks = tasks
-	if !seen[a.engine.Selected] {
-		a.engine.Selected = ""
+	selected := false
+	for _, task := range tasks {
+		selected = selected || (task.ID == a.engine.Selected && !task.Done)
+	}
+	if !selected {
+		a.engine.selectTask("", time.Now())
 	}
 	a.save()
 	return nil
@@ -314,7 +319,7 @@ func (a *App) Compact() {
 		runtime.WindowSetSize(a.ctx, 320, 110)
 		a.pinned = true
 	} else {
-		runtime.WindowSetSize(a.ctx, 440, 640)
+		runtime.WindowSetSize(a.ctx, 700, 640)
 		a.pinned = false
 	}
 	runtime.WindowSetAlwaysOnTop(a.ctx, a.pinned)

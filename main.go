@@ -16,7 +16,7 @@ var assets embed.FS
 func main() {
 	app := newApp()
 	err := wails.Run(&options.App{
-		Title: "pomodoro", Width: 440, Height: 640,
+		Title: "pomodoro", Width: 700, Height: 640,
 		DisableResize: true, Frameless: true,
 		BackgroundColour: options.NewRGB(248, 247, 244),
 		AssetServer:      &assetserver.Options{Assets: assets},

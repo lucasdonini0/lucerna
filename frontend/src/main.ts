@@ -28,6 +28,7 @@ const escape = (value: string) =>
 let state: State;
 let api: API;
 let taskKey = "";
+let settingsKey = "";
 let lastBell = 0;
 let lastWarning = "";
 let busy = false;
@@ -235,7 +236,8 @@ function render() {
       String(!historyOpen && !alarmsOpen && el.dataset.mode === state.mode),
     );
   });
-  $("#tasks-section").hidden = historyOpen || alarmsOpen || state.mode !== "pomodoro";
+  $("#pomodoro-settings").hidden = historyOpen || alarmsOpen || state.mode !== "pomodoro";
+  renderPomodoroSettings();
   $("#timer-options").hidden = historyOpen || alarmsOpen || state.mode !== "timer";
   $("#session-options").hidden = historyOpen || alarmsOpen || state.mode === "pomodoro";
   document.querySelectorAll<HTMLElement>("[data-work]").forEach((el) => {
@@ -251,10 +253,17 @@ function render() {
         Number(el.dataset.seconds) === state.clocks.timer.duration,
       ),
     );
-  const key = JSON.stringify([state.tasks, state.selected]);
+  const counting =
+    c.running && (state.mode === "pomodoro" ? state.phase === "focus" : work === "deep");
+  const key = JSON.stringify([
+    state.tasks,
+    state.selected,
+    counting,
+    Object.entries(state.taskSeconds ?? {}).map(([id, seconds]) => [id, Math.floor(seconds / 60)]),
+  ]);
   if (key !== taskKey) {
     taskKey = key;
-    renderTasks();
+    renderTasks(counting);
   }
   renderAlarms();
   const ringing = $<HTMLDialogElement>("#alarm-ringing");
@@ -300,17 +309,44 @@ function renderAlarms() {
     : '<p class="alarm-empty">Nenhum despertador adicionado.</p>';
 }
 
-function renderTasks() {
+function trackedLabel(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  return minutes < 60
+    ? `${minutes} min`
+    : `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}min`;
+}
+
+function renderPomodoroSettings() {
+  const key = JSON.stringify(state.settings);
+  if (key === settingsKey) return;
+  settingsKey = key;
+  const form = $<HTMLFormElement>("#pomodoro-form");
+  for (const [name, value] of Object.entries(state.settings)) {
+    const input = form.elements.namedItem(name) as HTMLInputElement | null;
+    if (!input || input === document.activeElement) continue;
+    if (typeof value === "boolean") input.checked = value;
+    else input.value = String(value);
+  }
+}
+
+function renderTasks(counting: boolean) {
+  const selected = state.tasks.find((t) => t.id === state.selected);
+  $("#task-hint").textContent = !selected
+    ? "Selecione uma tarefa para contar o tempo de foco."
+    : counting
+      ? "Contando o foco agora."
+      : "O tempo conta no foco do Pomodoro ou no Deep Work.";
+  $("#task-hint").classList.toggle("counting", !!selected && counting);
   $("#task-count").textContent =
     `${state.tasks.filter((t) => t.done).length}/${state.tasks.length}`;
   $("#task-list").innerHTML = state.tasks.length
     ? state.tasks
         .map(
           (t) =>
-            `<div class="task ${t.done ? "done" : ""} ${t.id === state.selected ? "selected" : ""}" data-id="${escape(t.id)}"><button class="checkbox" data-task="done" aria-label="${t.done ? "Reabrir" : "Concluir"} tarefa" aria-pressed="${t.done}">${t.done ? icon("check") : ""}</button><button class="task-title" data-task="select" title="Usar como meta" ${t.done ? "disabled" : ""}>${escape(t.title)}<small>${t.completed}${t.estimate ? ` / ${t.estimate}` : ""} focos${t.id === state.selected ? " · meta atual" : ""}</small></button><div class="task-actions"><button class="icon" data-task="up" aria-label="Mover para cima">${icon("up")}</button><button class="icon" data-task="edit" aria-label="Editar tarefa">${icon("edit")}</button><button class="icon" data-task="delete" aria-label="Excluir tarefa">${icon("trash")}</button></div></div>`,
+            `<div class="task ${t.done ? "done" : ""} ${t.id === state.selected ? "selected" : ""}" data-id="${escape(t.id)}"><button class="checkbox" data-task="done" aria-label="${t.done ? "Reabrir" : "Concluir"} tarefa" aria-pressed="${t.done}">${t.done ? icon("check") : ""}</button><button class="task-title" data-task="select" title="${t.id === state.selected ? "Parar de contar nesta tarefa" : "Contar o foco nesta tarefa"}" aria-pressed="${t.id === state.selected}" ${t.done ? "disabled" : ""}>${escape(t.title)}<small>${t.id === state.selected && counting ? '<i class="live"></i>' : ""}${trackedLabel(state.taskSeconds?.[t.id] ?? 0)} de foco</small></button><div class="task-actions"><button class="icon" data-task="up" aria-label="Mover para cima">${icon("up")}</button><button class="icon" data-task="edit" aria-label="Editar tarefa">${icon("edit")}</button><button class="icon" data-task="delete" aria-label="Excluir tarefa">${icon("trash")}</button></div></div>`,
         )
         .join("")
-    : "";
+    : '<p class="task-empty">Nenhuma tarefa ainda.</p>';
 }
 
 async function refresh() {
@@ -353,9 +389,11 @@ document.addEventListener("click", async (event) => {
     return;
   }
   const action =
-    target.dataset.action === "time-picker" && state.mode === "pomodoro"
-      ? "settings"
-      : target.dataset.action;
+    target.dataset.action;
+  if (action === "time-picker" && state.mode === "pomodoro") {
+    $<HTMLInputElement>('#pomodoro-form [name="focus"]').focus();
+    return;
+  }
   if (action === "history") {
     historyOpen = true;
     alarmsOpen = false;
@@ -424,7 +462,8 @@ document.addEventListener("click", async (event) => {
   } else if (action === "settings") {
     const form = $<HTMLFormElement>("#settings-form");
     for (const [name, value] of Object.entries(state.settings)) {
-      const input = form.elements.namedItem(name) as HTMLInputElement;
+      const input = form.elements.namedItem(name) as HTMLInputElement | null;
+      if (!input) continue;
       if (typeof value === "boolean") input.checked = value;
       else input.value = String(value);
     }
@@ -453,9 +492,6 @@ document.addEventListener("click", async (event) => {
     const form = $<HTMLFormElement>("#edit-task");
     form.dataset.id = id;
     (form.elements.namedItem("title") as HTMLInputElement).value = task.title;
-    (form.elements.namedItem("estimate") as HTMLInputElement).value = String(
-      task.estimate,
-    );
     $<HTMLDialogElement>("#edit-dialog").showModal();
     return;
   }
@@ -500,8 +536,6 @@ $("#add-task").addEventListener("submit", (event) => {
       {
         id: crypto.randomUUID(),
         title,
-        estimate: Number(data.get("estimate")),
-        completed: 0,
         done: false,
       },
     ]);
@@ -519,7 +553,6 @@ $("#edit-task").addEventListener("submit", (event) => {
           ? {
               ...t,
               title: String(data.get("title")),
-              estimate: Number(data.get("estimate")),
             }
           : t,
       ),
@@ -527,19 +560,32 @@ $("#edit-task").addEventListener("submit", (event) => {
     $<HTMLDialogElement>("#edit-dialog").close();
   });
 });
-$("#settings-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const form = event.target as HTMLFormElement;
+function readSettings(form: HTMLFormElement) {
   const settings = { ...state.settings };
   for (const key of Object.keys(settings) as (keyof Settings)[]) {
-    const input = form.elements.namedItem(key) as HTMLInputElement;
+    const input = form.elements.namedItem(key) as HTMLInputElement | null;
+    if (!input) continue;
     Object.assign(settings, {
       [key]: input.type === "checkbox" ? input.checked : Number(input.value),
     });
   }
+  return settings;
+}
+$("#settings-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const settings = readSettings(event.target as HTMLFormElement);
   void run(async () => {
     await api.Configure(settings);
     $<HTMLDialogElement>("#settings").close();
+  });
+});
+$("#pomodoro-form").addEventListener("submit", (event) => event.preventDefault());
+$("#pomodoro-form").addEventListener("change", () => {
+  const settings = readSettings($<HTMLFormElement>("#pomodoro-form"));
+  settingsKey = "";
+  void run(() => api.Configure(settings)).finally(() => {
+    settingsKey = "";
+    if (state) renderPomodoroSettings();
   });
 });
 $("#time-form").addEventListener("submit", (event) => {

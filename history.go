@@ -29,6 +29,7 @@ type Activity struct {
 	Mode      string    `json:"mode"`
 	Focus     bool      `json:"focus"`
 	Gaming    bool      `json:"gaming,omitempty"`
+	Task      string    `json:"task,omitempty"`
 	Completed bool      `json:"completed"`
 }
 
@@ -49,7 +50,11 @@ func (e *Engine) record(now time.Time) {
 			(e.Mode == "timer" && e.TimerDeepWork) ||
 			(e.Mode == "stopwatch" && e.StopwatchDeepWork)
 		gaming := (e.Mode == "timer" && e.TimerGaming) || (e.Mode == "stopwatch" && e.StopwatchGaming)
-		e.History = append(e.History, Activity{Start: c.anchor, End: c.anchor, Mode: e.Mode, Focus: focus, Gaming: gaming})
+		task := ""
+		if focus {
+			task = e.Selected
+		}
+		e.History = append(e.History, Activity{Start: c.anchor, End: c.anchor, Mode: e.Mode, Focus: focus, Gaming: gaming, Task: task})
 		e.active = len(e.History) - 1
 	}
 	entry := &e.History[e.active]

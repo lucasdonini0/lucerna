@@ -379,9 +379,12 @@ nav .active:after {
   font-size: 10px;
   color: var(--muted);
 }
-#tasks-section {
+#pomodoro-settings {
   border-top: 1px solid var(--line);
   padding-top: 19px;
+}
+#pomodoro-settings .settings-grid {
+  margin: 4px 0 8px;
 }
 .task {
   display: flex;
@@ -455,11 +458,6 @@ nav .active:after {
   border: 0;
   padding: 7px 0;
   font-size: 12px;
-}
-#add-task input[name="estimate"] {
-  width: 42px;
-  padding: 5px;
-  font-size: 10px;
 }
 input::placeholder {
   color: var(--muted);
@@ -949,7 +947,7 @@ input,
 .presets button,
 .checkbox,
 .progress,
-#tasks-section,
+#tasks-panel,
 .task,
 nav {
   transition:
@@ -1194,4 +1192,75 @@ body {
   from {
     opacity: 0.35;
   }
+}
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+#tasks-panel {
+  width: 250px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 16px 16px 22px;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  min-height: 0;
+}
+#task-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  margin-right: -6px;
+  padding-right: 6px;
+}
+.task-hint {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: -4px 0 10px;
+}
+.task-hint.counting {
+  color: var(--accent);
+  font-weight: 600;
+}
+.task.selected {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border-radius: 5px;
+  margin: 0 -8px;
+  padding: 9px 8px;
+  border-bottom-color: transparent;
+}
+.task.selected .task-title {
+  font-weight: 600;
+}
+.task-title small .live {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 5px;
+  vertical-align: 1px;
+  animation: live 1.4s ease-in-out infinite;
+}
+@keyframes live {
+  50% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+}
+.task-empty {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 8px 0;
+}
+#add-task {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.compact .shell {
+  display: none;
 }

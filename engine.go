@@ -18,11 +18,9 @@ type Settings struct {
 }
 
 type Task struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Estimate  int    `json:"estimate"`
-	Completed int    `json:"completed"`
-	Done      bool   `json:"done"`
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Done  bool   `json:"done"`
 }
 
 type Clock struct {
@@ -100,13 +98,6 @@ func (e *Engine) advance(now time.Time) {
 
 func (e *Engine) next(now time.Time, completed bool) {
 	if e.Phase == "focus" {
-		if completed {
-			for i := range e.Tasks {
-				if e.Tasks[i].ID == e.Selected && !e.Tasks[i].Done {
-					e.Tasks[i].Completed++
-				}
-			}
-		}
 		e.Phase = "short"
 		if e.Round >= e.Settings.Rounds {
 			e.Phase = "long"
@@ -217,9 +208,6 @@ func (e *Engine) command(action, value string, seconds int, now time.Time) error
 		e.finish(now, false)
 		e.Clocks[e.Mode] = &Clock{Duration: float64(seconds)}
 	case "select":
-		if e.Phase == "focus" && e.Clocks["pomodoro"].Started {
-			return errors.New("Reinicie o foco antes de trocar a meta")
-		}
 		if value != "" {
 			found := false
 			for _, task := range e.Tasks {
@@ -231,12 +219,24 @@ func (e *Engine) command(action, value string, seconds int, now time.Time) error
 				return errors.New("Selecione uma tarefa pendente")
 			}
 		}
-		e.Selected = value
+		e.selectTask(value, now)
 	default:
 		return errors.New("Comando inválido")
 	}
 	e.record(now)
 	return nil
+}
+
+func (e *Engine) selectTask(id string, now time.Time) {
+	if id == e.Selected {
+		return
+	}
+	if c := e.Clocks[e.Mode]; c.Running {
+		e.finish(now, false)
+		c.Elapsed, c.anchor = c.elapsed(now), now
+	}
+	e.Selected = id
+	e.record(now)
 }
 
 func (s Settings) valid() bool {

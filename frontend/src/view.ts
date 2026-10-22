@@ -21,43 +21,42 @@ const icons: Record<string, string> = {
 };
 export const icon = (name: string) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name]}</svg>`;
+const settingsFields = `<div class="settings-grid">${[
+  ["focus", "Foco", 240],
+  ["short", "Pausa curta", 120],
+  ["long", "Pausa longa", 240],
+  ["rounds", "Focos por ciclo", 20],
+]
+  .map(
+    ([name, title, max]) =>
+      `<label>${title}<div><input name="${name}" type="number" min="1" max="${max}" required><span>${name === "rounds" ? "focos" : "min"}</span></div></label>`,
+  )
+  .join("")}</div>${[
+  ["autoBreak", "Iniciar pausas automaticamente"],
+  ["autoFocus", "Iniciar focos automaticamente"],
+]
+  .map(
+    ([name, title]) =>
+      `<label class="switch-row">${title}<input type="checkbox" name="${name}"></label>`,
+  )
+  .join("")}`;
 const button = (action: string, title: string, name: string) =>
   `<button class="icon" data-action="${action}" title="${title}" aria-label="${title}">${icon(name)}</button>`;
 export const layout = `
  <div class="night"></div><div class="water" aria-hidden="true"><span class="blob"></span><span class="blob"></span><span class="blob"></span><span class="blob"></span>${Array.from({ length: 18 }, (_, i) => `<i style="--x:${(i * 41 + 5) % 96}%;--size:${4 + ((i * 7) % 11)}px;--delay:-${(i * 1.3).toFixed(1)}s;--duration:${8 + (i % 6) * 1.5}s;--drift:${(i % 2 ? -1 : 1) * (8 + (i % 13))}px"></i>`).join("")}</div><div class="particles" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => `<i style="--x:${(i * 37 + 11) % 100}%;--y:${(i * 23 + 7) % 100}%;--delay:-${i * 1.7}s;--duration:${7 + (i % 7)}s;--drift:${(i % 2 ? -1 : 1) * (12 + (i % 17))}px"></i>`).join("")}</div>
- <header><span class="brand"><span class="brand-mark"></span>pomodoro</span><div class="window-actions">${button("settings", "Configurações", "settings")}${button("compact", "Modo compacto", "compact")}${button("minimize", "Minimizar", "minus")}${button("quit", "Fechar", "close")}</div></header>
+ <header><span class="brand"><span class="brand-mark"></span>pomodoro</span><div class="window-actions">${button("settings", "Som e volume", "settings")}${button("compact", "Modo compacto", "compact")}${button("minimize", "Minimizar", "minus")}${button("quit", "Fechar", "close")}</div></header>
+ <div class="shell"><aside id="tasks-panel"><div class="section-heading"><span class="section-label">TAREFAS</span><span id="task-count"></span></div><p class="task-hint" id="task-hint"></p><div id="task-list"></div><form id="add-task"><input name="title" aria-label="Nova tarefa" placeholder="Adicionar uma tarefa…" maxlength="180" required autocomplete="off"><button class="icon" aria-label="Adicionar tarefa">${icon("plus")}</button></form></aside>
  <main><nav aria-label="Modo"><button data-mode="pomodoro">Pomodoro</button><button data-mode="timer">Timer</button><button data-mode="stopwatch">Stopwatch</button><button data-action="alarms">Despertador</button><button data-action="history">Histórico</button></nav>
  ${historyLayout}
  <section id="alarms" hidden><form id="alarm-form"><div class="alarm-display"><div class="eyebrow">ESCOLHA UM HORÁRIO</div><div class="alarm-time-input"><select name="hours" aria-label="Hora">${Array.from({ length: 24 }, (_, i) => `<option value="${String(i).padStart(2, "0")}">${String(i).padStart(2, "0")}</option>`).join("")}</select><span>:</span><select name="minutes" aria-label="Minutos">${Array.from({ length: 60 }, (_, i) => `<option value="${String(i).padStart(2, "0")}">${String(i).padStart(2, "0")}</option>`).join("")}</select></div><div class="alarm-subtitle">Um novo começo, na hora certa.</div><div class="progress"><span></span></div><div class="controls"><button class="primary" type="submit">${icon("plus")}<span>ADICIONAR</span></button></div></div><div class="alarm-options"><div class="section-label">COMO VAI TOCAR?</div><div class="alarm-controls"><label>Som<select name="sound"><option value="alerta">Alerta</option><option value="sirene">Sirene</option><option value="campainha">Campainha</option><option value="random">Random</option></select></label><button type="button" class="secondary" data-action="preview-alarm">Ouvir</button></div><label class="volume alarm-volume">Volume<input name="volume" type="range" min="0" max="1" step="0.05" value="0.85"></label><label class="switch-row">Repetir até desativar<input name="repeat" type="checkbox" checked></label><label class="switch-row">Remover depois de tocar<input name="removeAfter" type="checkbox"></label></div></form><div class="alarm-list-heading section-heading"><span class="section-label">HORÁRIOS SALVOS</span><span id="alarm-count"></span></div><div id="alarm-list"></div><p class="hint alarm-hint">O app precisa permanecer aberto para o despertador tocar.</p></section>
  <section class="clock"><div class="eyebrow" id="phase">SEU TEMPO, COM INTENÇÃO</div><button id="time" data-action="time-picker" aria-label="Configurar tempo">25:00</button><div id="subtitle">Um passo de cada vez.</div><button type="button" id="timer-end" class="timer-end" data-action="timer-until" title="Escolher o horário para tocar" hidden>${icon("bell")}<span id="timer-end-label"></span></button><div class="progress"><span></span></div><div class="controls">${button("reset", "Reiniciar", "reset")}<button class="primary" data-action="toggle" id="toggle">${icon("play")}<span>INICIAR</span></button>${button("skip", "Pular etapa", "skip")}</div><div id="rounds"></div></section>
  <section id="session-options"><div class="session-work-row"><span class="section-label">TIPO DE SESSÃO</span><div class="session-work" role="radiogroup" aria-label="Tipo de sessão">${[["normal", "Normal"], ["deep", "Deep Work"], ["gaming", "Gaming"]].map(([value, label]) => `<button type="button" data-action="session-work" data-work="${value}" role="radio" aria-checked="false">${label}</button>`).join("")}</div></div></section>
  <section id="timer-options"><div class="section-label">ESCOLHA UMA DURAÇÃO</div><div class="presets">${[5, 10, 15, 30, 60, 180, 360, 720].map((m) => `<button data-seconds="${m * 60}">${m < 60 ? `${m} min` : `${m / 60} h`}</button>`).join("")}</div></section>
- <section id="tasks-section"><div class="section-heading"><span class="section-label">O QUE VAMOS FAZER?</span><span id="task-count"></span></div><div id="task-list"></div><form id="add-task"><input name="title" aria-label="Nova tarefa" placeholder="Adicionar uma tarefa…" maxlength="180" required autocomplete="off"><input name="estimate" type="number" aria-label="Meta de pomodoros" title="Meta de pomodoros" min="0" max="99" value="1"><button class="icon" aria-label="Adicionar tarefa">${icon("plus")}</button></form></section>
+ <section id="pomodoro-settings"><div class="section-heading"><span class="section-label">CONFIGURAR POMODORO</span></div><form id="pomodoro-form">${settingsFields}</form></section>
  <section id="stopwatch-note"><span class="small-mark">↗</span><h2>No seu ritmo.</h2><p>Cada segundo também conta.</p></section>
- </main>
+ </main></div>
  <div id="mini"><div class="mini-top"><span id="mini-phase"></span><div>${button("pin", "Sempre por cima", "pin")}${button("compact", "Restaurar janela", "expand")}</div></div><div class="mini-bottom"><strong id="mini-time"></strong><button class="icon" data-action="toggle" id="mini-toggle" aria-label="Iniciar ou pausar"></button></div></div>
- <dialog id="settings"><form id="settings-form"><div class="section-heading"><h2>Configurações</h2>${button("close-settings", "Fechar configurações", "close")}</div><div class="settings-grid">${[
-   ["focus", "Foco", 240],
-   ["short", "Pausa curta", 120],
-   ["long", "Pausa longa", 240],
-   ["rounds", "Focos por ciclo", 20],
- ]
-   .map(
-     ([name, title, max]) =>
-       `<label>${title}<div><input name="${name}" type="number" min="1" max="${max}" required><span>${name === "rounds" ? "focos" : "min"}</span></div></label>`,
-   )
-   .join("")}</div>${[
-   ["autoBreak", "Iniciar pausas automaticamente"],
-   ["autoFocus", "Iniciar focos automaticamente"],
-   ["sound", "Som ao concluir"],
- ]
-   .map(
-     ([name, title]) =>
-       `<label class="switch-row">${title}<input type="checkbox" name="${name}"></label>`,
-   )
-   .join(
-     "",
-   )}<label class="volume">Volume<input name="volume" type="range" min="0" max="1" step="0.05"></label><button class="primary save" type="submit">Salvar ajustes</button></form></dialog>
+ <dialog id="settings"><form id="settings-form"><div class="section-heading"><h2>Configurações</h2>${button("close-settings", "Fechar configurações", "close")}</div><label class="switch-row">Som ao concluir<input type="checkbox" name="sound"></label><label class="volume">Volume<input name="volume" type="range" min="0" max="1" step="0.05"></label><button class="primary save" type="submit">Salvar ajustes</button></form></dialog>
  <dialog id="time-dialog"><form id="time-form"><h2>Configurar tempo</h2><div class="time-picker">${[
    ["hours", "Horas", 23],
    ["minutes", "Minutos", 59],
@@ -79,4 +78,4 @@ export const layout = `
        `<label>${label}<select name="${name}" aria-label="${label}">${Array.from({ length: Number(max) + 1 }, (_, i) => `<option value="${String(i).padStart(2, "0")}">${String(i).padStart(2, "0")}</option>`).join("")}</select></label>`,
    )
    .join("")}</div><p class="hint" id="timer-until-preview"></p><div class="edit-actions"><button type="button" class="secondary" data-action="close-timer-until">Cancelar</button><button class="primary" type="submit">Iniciar timer</button></div></form></dialog>
- <dialog id="edit-dialog"><form id="edit-task"><h2>Editar tarefa</h2><input name="title" aria-label="Nome da tarefa" maxlength="180" required><label>Meta de pomodoros<input name="estimate" type="number" min="0" max="99" required></label><div class="edit-actions"><button type="button" class="secondary" data-action="close-edit">Cancelar</button><button class="primary" type="submit">Salvar</button></div></form></dialog><dialog id="alarm-ringing"><div class="ringing-content"><span class="small-mark">${icon("bell")}</span><div class="section-label">DESPERTADOR</div><strong id="ringing-time"></strong><p>Está na hora.</p><button type="button" class="primary" data-action="dismiss-alarm">Desativar</button></div></dialog><div id="toast" role="status"></div>`;
+ <dialog id="edit-dialog"><form id="edit-task"><h2>Editar tarefa</h2><input name="title" aria-label="Nome da tarefa" maxlength="180" required><div class="edit-actions"><button type="button" class="secondary" data-action="close-edit">Cancelar</button><button class="primary" type="submit">Salvar</button></div></form></dialog><dialog id="alarm-ringing"><div class="ringing-content"><span class="small-mark">${icon("bell")}</span><div class="section-label">DESPERTADOR</div><strong id="ringing-time"></strong><p>Está na hora.</p><button type="button" class="primary" data-action="dismiss-alarm">Desativar</button></div></dialog><div id="toast" role="status"></div>`;

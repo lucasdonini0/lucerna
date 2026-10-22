@@ -12,8 +12,6 @@ export type Settings = {
 export type Task = {
   id: string;
   title: string;
-  estimate: number;
-  completed: number;
   done: boolean;
 };
 export type Alarm = {
@@ -38,6 +36,7 @@ export type State = {
   round: number;
   seconds: number;
   timerEndsAt: string | null;
+  taskSeconds: Record<string, number>;
   progress: number;
   bell: number;
   starts: number;
@@ -71,6 +70,7 @@ export type Activity = {
   mode: Mode;
   focus: boolean;
   gaming?: boolean;
+  task?: string;
   completed: boolean;
 };
 declare global {

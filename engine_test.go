@@ -21,10 +21,8 @@ func TestPauseResume(t *testing.T) {
 	}
 }
 
-func TestCycleAndTaskCredit(t *testing.T) {
+func TestCycle(t *testing.T) {
 	e := newEngine()
-	e.Tasks = []Task{{ID: "a", Title: "Read", Estimate: 4}}
-	e.Selected = "a"
 	now := time.Unix(1000, 0)
 	for round := 1; round <= 4; round++ {
 		_ = e.command("toggle", "", 0, now)
@@ -37,23 +35,10 @@ func TestCycleAndTaskCredit(t *testing.T) {
 		if e.Phase != want || e.Round != round || e.Clocks["pomodoro"].Running {
 			t.Fatalf("round %d: %+v", round, e)
 		}
-		if e.Tasks[0].Completed != round {
-			t.Fatalf("credit: %d", e.Tasks[0].Completed)
-		}
 		_ = e.command("skip", "", 0, now)
 	}
 	if e.Round != 1 || e.Phase != "focus" {
 		t.Fatal("cycle did not restart")
-	}
-}
-
-func TestSkippedFocusHasNoCredit(t *testing.T) {
-	e := newEngine()
-	e.Tasks = []Task{{ID: "a", Title: "Read"}}
-	e.Selected = "a"
-	_ = e.command("skip", "", 0, time.Now())
-	if e.Tasks[0].Completed != 0 {
-		t.Fatal("skipped focus credited")
 	}
 }
 
@@ -109,9 +94,9 @@ func TestTimerCompletesOnce(t *testing.T) {
 func TestPersistence(t *testing.T) {
 	a := newApp()
 	a.path = t.TempDir() + "/data.json"
-	a.engine.Tasks = []Task{{ID: "a", Title: "Read", Completed: 2}}
+	a.engine.Tasks = []Task{{ID: "a", Title: "Read"}}
 	a.save()
-	a.engine.Tasks[0].Completed = 3
+	a.engine.Tasks[0].Done = true
 	a.save()
 	if a.warning != "" {
 		t.Fatal(a.warning)
@@ -124,7 +109,7 @@ func TestPersistence(t *testing.T) {
 	if err := json.Unmarshal(data, &saved); err != nil {
 		t.Fatal(err)
 	}
-	if len(saved.Tasks) != 1 || saved.Tasks[0].Completed != 3 {
+	if len(saved.Tasks) != 1 || !saved.Tasks[0].Done {
 		t.Fatal("changes not persisted")
 	}
 }
@@ -147,76 +132,48 @@ func TestSettingsApplyNextPhase(t *testing.T) {
 	}
 }
 
-func TestTaskCreditCannotBeOverwritten(t *testing.T) {
-	a := newApp()
-	a.engine.Tasks = []Task{{ID: "a", Title: "Read", Completed: 3}}
-	if err := a.SaveTasks([]Task{{ID: "a", Title: "Write", Completed: 0}}); err != nil {
-		t.Fatal(err)
-	}
-	if a.engine.Tasks[0].Completed != 3 {
-		t.Fatal("stale UI overwrote credit")
-	}
-}
-
-func TestDurationPicker(t *testing.T) {
+func TestFocusTimeIsTrackedPerSelectedTask(t *testing.T) {
 	e := newEngine()
-	now := time.Now()
-	_ = e.command("toggle", "", 0, now)
-	if err := e.command("duration", "pomodoro:focus", 90, now); err != nil {
-		t.Fatal(err)
+	e.Tasks = []Task{{ID: "a", Title: "Read"}, {ID: "b", Title: "Write"}}
+	now := time.Date(2026, 10, 22, 9, 0, 0, 0, time.Local)
+	steps := []struct {
+		action, value string
+		minutes       int
+	}{
+		{"mode", "stopwatch", 0},
+		{"select", "a", 0},
+		{"toggle", "", 0},
+		{"stopwatch-work", "deep", 5},
+		{"select", "b", 15},
+		{"stopwatch-work", "normal", 20},
+		{"select", "a", 25},
 	}
-	c := e.Clocks["pomodoro"]
-	if c.Duration != 90 || c.Running || c.Started || c.Elapsed != 0 {
-		t.Fatal("duration was not reset")
+	for _, step := range steps {
+		if err := e.command(step.action, step.value, 0, now.Add(time.Duration(step.minutes)*time.Minute)); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if e.Settings.Focus != 25 {
-		t.Fatal("default duration changed")
-	}
-	if e.command("duration", "pomodoro:short", 120, now) == nil {
-		t.Fatal("stale phase accepted")
-	}
-	if e.command("duration", "pomodoro:focus", 0, now) == nil {
-		t.Fatal("zero accepted")
-	}
-	_ = e.command("mode", "timer", 0, now)
-	if err := e.command("duration", "timer:focus", 43200, now); err != nil {
-		t.Fatal(err)
-	}
-	if e.Clocks["timer"].Duration != 43200 {
-		t.Fatal("timer not configured")
-	}
-	_ = e.command("mode", "stopwatch", 0, now)
-	if e.command("duration", "stopwatch:focus", 30, now) == nil {
-		t.Fatal("stopwatch accepted duration")
-	}
-}
-
-func TestMessagesOnlyOnNewStarts(t *testing.T) {
-	e := newEngine()
-	now := time.Now()
-	for _, mode := range []string{"timer", "stopwatch", "pomodoro"} {
-		_ = e.command("mode", mode, 0, now)
-	}
-	if e.Starts != 0 {
-		t.Fatal("navigation counted as a start")
-	}
-	_ = e.command("toggle", "", 0, now)
-	_ = e.command("toggle", "", 0, now)
-	_ = e.command("toggle", "", 0, now)
-	if e.Starts != 1 {
-		t.Fatal("pause or resume counted as a new start")
-	}
-	e.advance(now.Add(25 * time.Minute))
-	if e.Starts != 1 {
-		t.Fatal("waiting break counted as a start")
-	}
-	_ = e.command("toggle", "", 0, now.Add(25*time.Minute))
-	if e.Starts != 2 {
-		t.Fatal("break start not counted")
-	}
-	e.Settings.AutoFocus = true
 	e.advance(now.Add(30 * time.Minute))
-	if e.Starts != 3 {
-		t.Fatal("automatic focus start not counted")
+	totals := map[string]time.Duration{}
+	for _, entry := range e.History {
+		totals[entry.Task] += entry.End.Sub(entry.Start)
+	}
+	if totals["a"] != 10*time.Minute || totals["b"] != 5*time.Minute || totals[""] != 15*time.Minute {
+		t.Fatalf("task totals: %v", totals)
+	}
+	if !e.Clocks["stopwatch"].Running || e.Clocks["stopwatch"].elapsed(now.Add(30*time.Minute)) != 1800 {
+		t.Fatal("changing task interrupted the stopwatch")
+	}
+}
+
+func TestFinishingSelectedTaskStopsTracking(t *testing.T) {
+	a := newApp()
+	a.engine.Tasks = []Task{{ID: "a", Title: "Read"}}
+	a.engine.Selected = "a"
+	if err := a.SaveTasks([]Task{{ID: "a", Title: "Read", Done: true}}); err != nil {
+		t.Fatal(err)
+	}
+	if a.engine.Selected != "" {
+		t.Fatal("finished task stayed selected")
 	}
 }
