@@ -400,10 +400,13 @@ nav .active:after {
   border: 1px solid #bdb6c6;
   border-radius: 3px;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .checkbox svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 .task-title {
   text-align: left;
