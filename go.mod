@@ -1,4 +1,4 @@
-module github.com/lucasdonini0/pomodoro
+module github.com/lucasdonini0/lucerna
 
 go 1.25.0
 
